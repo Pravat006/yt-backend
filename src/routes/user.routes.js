@@ -17,7 +17,7 @@ router.route("/register").post(
 
         }
     ]),
-    registerUser
+    registerUser,
 );
 
 

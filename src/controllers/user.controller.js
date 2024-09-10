@@ -95,7 +95,7 @@ const generateAccessAndRefreshToken = async (userId) => {
   }
 };
 
-const loginUser = asyncHandler(async (req, rex) => {
+const loginUser = asyncHandler(async (req, res) => {
   //req body-> data
   //username or email
   //find the user

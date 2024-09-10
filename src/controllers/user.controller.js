@@ -105,9 +105,17 @@ const loginUser = asyncHandler(async (req, rex) => {
 
   //take the login data from user to login
   const { email, username, password } = req.body;
-  if (!username || !email) {
+  //if (!username && !email) {
+  //  throw new ApiError(400, "username or email is required");
+  //}
+  if(!(username || email)){
     throw new ApiError(400, "username or email is required");
-  }
+  
+}
+
+
+
+
   //find the existed user in the database
   const user = await User.findOne({
     $or: [{ username }, { email }],
@@ -154,6 +162,8 @@ const loginUser = asyncHandler(async (req, rex) => {
       )
     );
 });
+
+//logout user
 const logOutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,

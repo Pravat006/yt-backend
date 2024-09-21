@@ -275,7 +275,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Account details updated successfull"));
 });
 
-const udateUserAvatar = asyncHandler(async (req, res) => {
+const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.file?.path;
 
   if (!avatarLocalPath) {
@@ -300,7 +300,7 @@ const udateUserAvatar = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, updatedAvatar, "Avatar updated successfull"));
 });
 
-const udateUserCoverImage = asyncHandler(async (req, res) => {
+const updateUserCoverImage = asyncHandler(async (req, res) => {
   const coverImageLocalPath = req.file?.path;
 
   if (!coverImageLocalPath) {
@@ -327,7 +327,7 @@ const udateUserCoverImage = asyncHandler(async (req, res) => {
     );
 });
 
-const userChannelProfile = asyncHandler(async (req, res) => {
+const getUserChannelProfile = asyncHandler(async (req, res) => {
   const { username } = req.params;
   if (!username?.trim()) {
     throw new ApiError(400, "username missing");
@@ -448,6 +448,8 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     );
 });
 
+
+
 export {
   registerUser,
   loginUser,
@@ -456,8 +458,8 @@ export {
   changeCurrentPassword,
   getCurrentUser,
   updateAccountDetails,
-  udateUserAvatar,
-  udateUserCoverImage,
-  userChannelProfile,
+  updateUserAvatar,
+  updateUserCoverImage,
+  getUserChannelProfile,
   getWatchHistory,
 };

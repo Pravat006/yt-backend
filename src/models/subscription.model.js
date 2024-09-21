@@ -12,7 +12,7 @@ const subscriptionSchema = new Schema({
 
         }
 
-},{timeseries:true})
+},{timestamps:true})
 
 
 export const Subscription= model("Subscription", subscriptionSchema)

@@ -131,9 +131,7 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   //generate access and refresh token for user by id
-  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-    user._id
-  );
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
   //send access token and refrea=sh token to cookies
   const loggedInuser = await User.findById(user._id).select(
@@ -167,8 +165,9 @@ const logOutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $set: {
-        refreshToken: undefined,
+      $unset: {
+        //refreshToken: undefined,
+        refreshToken: 1,
       },
     },
     {
@@ -211,17 +210,17 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     };
 
     //after token verification generate new access and refresh token
-    const { accessToken, newRefreshToken } =
+    const { accessToken, RefreshToken } =
       await generateAccessAndRefreshToken(user._id);
 
     return res
       .status(200)
       .cookie("access token", accessToken, options)
-      .cookie("refresh token", newRefreshToken, options)
+      .cookie("refresh token", RefreshToken, options)
       .json(
         new ApiResponse(
           200,
-          { accessToken, refreshToken: newRefreshToken },
+          { accessToken, refreshToken: RefreshToken },
           "Access token refreshed"
         )
       );
@@ -408,11 +407,11 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         foreignField: "_id",
         as: "watchHistory",
         pipeline: [
-          {
+          { 
             $lookup: {
               from: "users",
               localField: "owner",
-              foreignField: "_id",
+              foreignField: "_id", 
               as: "owner",
               pipeline: [
                 {

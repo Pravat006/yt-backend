@@ -131,7 +131,9 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   //generate access and refresh token for user by id
-  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
 
   //send access token and refrea=sh token to cookies
   const loggedInuser = await User.findById(user._id).select(
@@ -210,8 +212,9 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     };
 
     //after token verification generate new access and refresh token
-    const { accessToken, RefreshToken } =
-      await generateAccessAndRefreshToken(user._id);
+    const { accessToken, RefreshToken } = await generateAccessAndRefreshToken(
+      user._id
+    );
 
     return res
       .status(200)
@@ -407,11 +410,11 @@ const getWatchHistory = asyncHandler(async (req, res) => {
         foreignField: "_id",
         as: "watchHistory",
         pipeline: [
-          { 
+          {
             $lookup: {
               from: "users",
               localField: "owner",
-              foreignField: "_id", 
+              foreignField: "_id",
               as: "owner",
               pipeline: [
                 {
@@ -446,7 +449,6 @@ const getWatchHistory = asyncHandler(async (req, res) => {
       )
     );
 });
-
 
 
 export {

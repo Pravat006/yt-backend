@@ -1,4 +1,4 @@
-import mongoose, { isValidObjectId } from "mongoose";
+import  { isValidObjectId } from "mongoose";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -52,6 +52,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
     thumbnail: thumbnail?.url || "",
     title,
     description,
+    duration: videoFile.duration
   });
 
   const uploadedVideo = await Video.findById(video._id);
@@ -65,10 +66,101 @@ const getVideoById = asyncHandler(async (req, res) => {
   try {
     const { videoId } = req.params;
     //TODO: get video by id
-    const video = Video.findById(videoId);
-    if (!videoId) {
+    if (!isValidObjectId(videoId)) {
       throw new ApiError(404, "video not found");
     }
+    const video = await Video.aggregate([
+      {
+        $match:{
+          _id: new  mongoose.Types.ObjectId(videoId)
+        }
+      },{
+          $lookup:{
+            from: "likes",
+            localField: "_id",
+            foreignField: "video",
+            as: "likes"
+          }
+      },
+      {
+        $lookup:{
+          from: "comments",
+          localField: "_id",
+          foreignField: "content",
+          as: "comments"
+        }
+      },
+      {
+        $lookup:{
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner",
+          pipeline:[
+            {
+              $project:{
+                username: 1,
+                "avatar.url": 1,
+              }
+            }
+          ]
+        }
+      },
+      {
+        $unwind: "$uploadedBy"
+      },
+      {
+        $addFields:{
+          commentCount:{
+            $size: "comments"
+          },
+          likesCount:{
+            $size: "likes"
+          }
+
+        }
+      },
+      {
+        $project:{
+          title: 1,
+          description: 1,
+          videoFile: 1,
+          thumbnail: 1,
+          duration: 1,
+          commentCount: 1,
+          likesCount: 1,
+          owner: 1,
+          createdAt: 1,
+
+        }
+      }
+      
+    ])
+   
+
+//// add this video to user watch history
+if(!isValidObjectId(videoId)){  
+  throw new ApiError(404, "Invalid object id provided");
+}
+
+if(!video){
+  throw new ApiError(404, "Video not found");
+}
+// increment views if video fetched successfully
+await Video.findByIdAndUpdate(videoId, {
+  $inc: {
+    views: 1
+  }
+});
+await User.findByIdAndUpdate(req.user?._id, {
+    $addToSet: {
+        watchHistory: videoId
+    }
+});
+
+
+
+
     return res
       .status(200)
       .json(new ApiResponse(200, video, "video content fetched successfully"));
@@ -83,14 +175,35 @@ const getVideoById = asyncHandler(async (req, res) => {
 const updateVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const { title, description } = req.body;
-  const newThumbnailLocalpath = req.files?.path;
-  if (!newThumbnailLocalpath) {
-    throw new ApiError(400, "thumbnail file is missing");
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(404, "Invalid object id provided");
   }
-  const thumbnail = await uploadOnCloudinary(newThumbnailLocalpath);
-  if (!thumbnail.url) {
-    throw new ApiError(400, "Error while uplaoding the tumbnail on cloud");
+  
+  if ([title, description].some((field) => field?.trim() === "")) {
+    throw new ApiError(400, "title and description required ");
   }
+const newThumbnailLocalpath = req.files?.thumbnail[0]?.path;
+  const video = await Video.findById(videoId);
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+  let newThumbnail;
+  if (newThumbnailLocalpath) {
+    newThumbnail = await uploadOnCloudinary(newThumbnailLocalpath);
+    if (!newThumbnail.url) {
+      throw new ApiError(400, "Error while uplaoding the tumbnail on cloud");
+    }
+  }
+
+
+
+  //if (!newThumbnailLocalpath) {
+  //  throw new ApiError(400, "thumbnail file is missing");
+  //}
+  //const newThumbnail = await uploadOnCloudinary(newThumbnailLocalpath);
+  //if (!newThumbnail.url) {
+  //  throw new ApiError(400, "Error while uplaoding the tumbnail on cloud");
+  //}
 
   const updatedVideo = await Video.findByIdAndUpdate(
     videoId,
@@ -98,7 +211,7 @@ const updateVideo = asyncHandler(async (req, res) => {
       $set: {
         title,
         description,
-        thumbnail: thumbnail.url,
+        thumbnail: newThumbnail?.url.toString() || "",
       },
     },
     { new: true }
@@ -113,6 +226,9 @@ const updateVideo = asyncHandler(async (req, res) => {
 
 const deleteVideo = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
+  if (!isValidObjectId(videoId)) {
+    throw new ApiError(404, "Invalid object id provided");
+  }
   const video = await Video.findById(videoId);
   if (!video) {
     throw new ApiError(404, "Video not found");
@@ -130,6 +246,9 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     const video = await Video.findById(videoId);
     if (!video) {
       throw new ApiError(404, "Video not found");
+    }
+    if (!isValidObjectId(videoId)) {
+      throw new ApiError(404, "Invalid object id provided");
     }
 
     video.isPublished = !video.isPublished;
